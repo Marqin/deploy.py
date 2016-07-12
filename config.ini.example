@@ -1,0 +1,11 @@
+[main]
+sleep_seconds = 60
+repository_type = git
+repository_url = https://github.com/Marqin/deploy.py
+data_dir = /tmp/data/
+name = example-project
+scp_url = user@127.0.0.1:/home/user/packages/
+
+[extra]
+script =
+scp_settings = -P 1234

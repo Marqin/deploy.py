@@ -87,3 +87,9 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+# deploy.py config
+/config.ini
+/last_tag.txt
+
+/.idea/
