@@ -5,7 +5,6 @@
 
 import configparser
 import time
-import os
 import subprocess
 import sys
 import datetime
@@ -37,7 +36,7 @@ class Deployer:
         data = config.get("main", "data_dir", fallback="")
         self.name = config.get("main", "name", fallback="")
         self.scp_url = config.get("main", "scp_url", fallback="")
-        self.script = config.get("extra", "script", fallback="")
+        script = config.get("extra", "script", fallback="")
         self.scp_settings = config.get("extra", "scp_settings", fallback="")
 
         if "" in (self.type, self.url, data, self.name, self.scp_url):
@@ -49,8 +48,12 @@ class Deployer:
         if self.sleep <= 0.0:
             raise Exception("Sleep time must be higher than 0.0!")
 
-        if self.script != "" and not os.path.isfile(self.script):
-            raise Exception("Script does not exist!")
+        if script == "":
+            self.script = None
+        else:
+            self.script = pathlib.Path(self.script).resolve()
+            if not self.script.is_file():
+                raise Exception("Script does not exist!")
 
         self.data_dir = pathlib.Path(data)
 
@@ -149,40 +152,36 @@ class Deployer:
         return new_tags_list
 
     def __process_tag(self, tag):
-        tag_dir = tempfile.mkdtemp()
+        tag_dir = pathlib.Path(tempfile.mkdtemp())
         try:
             try:
                 subprocess.check_output(
                     ["git", "clone", str(self.repo_dir), "."],
-                    cwd=tag_dir,
+                    cwd=str(tag_dir),
                     stderr=subprocess.STDOUT)
                 subprocess.check_output(
                     ["git", "checkout", "tags/"+tag],
-                    cwd=tag_dir,
+                    cwd=str(tag_dir),
                     stderr=subprocess.STDOUT)
-                shutil.rmtree(tag_dir+"/.git")
+                shutil.rmtree(str(tag_dir / ".git"))
                 try:
-                    os.remove(tag_dir+"/.gitignore")
-                except OSError:
+                    (tag_dir / ".gitignore").unlink()
+                except FileNotFoundError:
                     pass
-                if self.script != "":
+                if self.script:
                     subprocess.check_output(
-                        [self.script, tag, tag_dir],
-                        cwd=tag_dir,
+                        [str(self.script), tag, str(tag_dir)],
+                        cwd=str(tag_dir),
                         stderr=subprocess.STDOUT)
             except subprocess.CalledProcessError as e:
                 self.__log_error(e.output)
                 raise
 
-            try:
-                os.chdir(str(self.package_dir))
-            except OSError:
-                self.package_dir.mkdir()
-                os.chdir(str(self.package_dir))
+            zip_path = self.package_dir / (self.name + "-" + tag)  # must be without extension
 
-            shutil.make_archive(self.name+"-"+tag, "zip", tag_dir, ".")
+            shutil.make_archive(str(zip_path), "zip", str(tag_dir), ".")
         except:
-            shutil.rmtree(tag_dir)
+            shutil.rmtree(str(tag_dir))
             raise
 
     def __send_packages(self):
@@ -196,4 +195,4 @@ class Deployer:
                 except subprocess.CalledProcessError as e:
                     self.__log_error(e.output)
                     continue
-            os.remove(str(f.resolve()))
+            f.unlink()
