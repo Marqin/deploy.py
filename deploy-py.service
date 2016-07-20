@@ -1,0 +1,11 @@
+[Unit]
+Description=Tag deployer script written in Python3
+After=syslog.target network-online.target remote-fs.target nss-lookup.target
+[Service]
+ExecStart=/usr/bin/python3 PATH_TO_DEPLOYER/deploy.py
+User=DEPLOYER_USER
+ExecReload=/bin/kill -s HUP $MAINPID
+ExecStop=/bin/kill -s QUIT $MAINPID
+PrivateTmp=true
+[Install]
+WantedBy=multi-user.target
