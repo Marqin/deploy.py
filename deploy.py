@@ -27,4 +27,8 @@ except:
     raise Exception("You must install scp!")
 
 d = src.deployer.Deployer(pathlib.Path(__file__).resolve().parent / "config.ini")
-d.run()
+
+try:
+    d.run()
+except KeyboardInterrupt:
+    sys.exit()
