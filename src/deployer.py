@@ -51,7 +51,7 @@ class Deployer:
         if script == "":
             self.script = None
         else:
-            self.script = pathlib.Path(self.script).resolve()
+            self.script = pathlib.Path(script).resolve()
             if not self.script.is_file():
                 raise Exception("Script does not exist!")
 
